@@ -1,12 +1,19 @@
 import express from "express";
-import dotenv from "dotenv/lib/main";
+import dotenv from "dotenv";
 import cron from "node-cron";
 import webpush from "web-push";
 import cors from "cors";
 import {Client} from "pg";
 import imap from "imap-simple";
 import {simpleParser} from "mailparser";
+import path from "path";
+import { fileURLToPath, fileURLToPathBuffer } from "url";
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+dotenv.config({
+    path: path.join(__dirname,".env")
+});
 //configuration for the imap protocol
 const imapConfig = {
      imap: {
@@ -15,7 +22,10 @@ const imapConfig = {
         host: "imap.gmail.com",
         port: 993,
         tls: true,
-        authTimeout: 10000
+        authTimeout: 10000,
+        tlsOptions:{
+            rejectUnauthorized:false
+        }
   }
 }
 //functions needed
@@ -29,7 +39,7 @@ async function scanEmails(imapConfig){
 
     const criteria = [
         "ALL",
-        ["FROM","splitspotgt@gmail.com"],
+        ["FROM","ch.sc.u4cse25255@ch.students.amrita.edu"],
         ["SINCE",today],
     ]
 
@@ -79,7 +89,7 @@ async function getEmails(){
 }
 
 async function getSubscriptions(){
-    const query="SELECT subscription FROM subscriptions"
+    const query="SELECT subscriptions FROM subscriptions"
     try{
         let result = await client.query(query);
         let rows = result.rows;
@@ -90,7 +100,7 @@ async function getSubscriptions(){
 }
 async function updateSubscriptions(subscription){
     const query =  `
-         INSERT INTO subscriptions (subscription)
+         INSERT INTO subscriptions (subscriptions)
          VALUES ($1::jsonb)
      `
     try{
@@ -101,13 +111,27 @@ async function updateSubscriptions(subscription){
     }
     
 }
-dotenv.config();
+function cleanText(text){
+    if (!text) return '';
+  // Remove everything before the actual message
+  let cleantext = text
+    .replace(/^[\s\S]*?Subject:\s*\n/i, '') // remove headers
+    .replace(/\nDisclaimer[\s\S]*/i, '')    // remove disclaimer
+    .replace(/\[https?:\/\/.*?\]/g, '')     // remove image links
+    .trim();
+
+  // Remove excessive newlines
+  cleantext = cleantext.replace(/\n{2,}/g, '\n').trim();
+
+  return cleantext;
+}
 const app  = express();
 app.use(cors());
 app.use(express.json());
+app.use(express.static(path.join(__dirname,"../frontend")));
 
 const client = new Client({
-  connectionString: process.env.DBURL,
+  connectionString: process.env.DB_URL,
   ssl: { rejectUnauthorized: false }
 });
 
@@ -155,8 +179,9 @@ app.get("/fetch",async(req,res)=>{
     }
 })
 //cron task scheduler to scan emails , save in DB and send notifications hourly
-cron.schedule("0 * * * *",async ()=>{
+cron.schedule("*/10 * * * * *",async ()=>{
     let emails =  await scanEmails(imapConfig);
+    let dbemails = await getEmails();
     let filtered_emails = [];
     const keywords = [
     "submit", "submission", "assignment", "homework", "project",
@@ -166,24 +191,37 @@ cron.schedule("0 * * * *",async ()=>{
     "confirm", "confirmation", "approved", "acceptance", "received", "verification",
     "please submit", "action required", "fill out", "click here", "complete by", "upload your"
     ];
+    let check_emails = [];
     for(const email of emails){
         if(keywords.some(subtext=>(email.text||"").toLowerCase().includes(subtext))){
+            email.text = cleanText(email.text);
             filtered_emails.push(email);
         }
     }
     let subscriptions = await getSubscriptions();
     for(const femail of filtered_emails){
-        await storeEmails(femail);
+        let con = false;
+        for(const email of dbemails){
+            if(femail.text==email.email.text){
+                con = true;
+            }
+        }
+        if(!con){
+            check_emails.push(femail);
+            await storeEmails(femail);
+        }
     }
-    if(filtered_emails.length()>0){
+    if(check_emails.length>0){
         //to send push notifications to each subscription endpoint stored
         for(const sub of subscriptions){
-        webpush.sendNotification(sub.subscription,JSON.stringify({
+        webpush.sendNotification(sub.subscriptions,JSON.stringify({
             title:"New Reminder",
             body:"New email(s) detected"
         }));
     }
     }
-    
 
+})
+app.listen(process.env.PORT,()=>{
+    console.log("Server started at:",process.env.PORT);
 })

@@ -1,0 +1,11 @@
+{
+  "name": "Email Reminder App",
+  "short_name": "Reminders",
+  "description": "Personal email-based reminder and notification app",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#0f172a",
+  "orientation": "portrait"
+}
