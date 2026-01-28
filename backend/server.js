@@ -1,4 +1,5 @@
 import express from "express";
+import dns from "dns";
 import dotenv from "dotenv";
 import cron from "node-cron";
 import webpush from "web-push";
@@ -14,6 +15,7 @@ const __dirname = path.dirname(__filename);
 dotenv.config({
     path: path.join(__dirname,".env")
 });
+dns.setDefaultResultOrder("ipv4first");
 //configuration for the imap protocol
 const imapConfig = {
      imap: {
