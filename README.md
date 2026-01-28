@@ -1,6 +1,6 @@
 # Email Keyword Reminder App
 
-A web-based reminder application that automatically retrieves emails, detects important keywords (such as submission deadlines and important links), stores them, displays them in a frontend PWA(Progressive Web App), and sends push notifications when new emails matching the criteria are found.
+A web-based reminder application that automatically retrieves emails, detects important keywords (such as submission,deadlines and important links), stores them, displays them in a frontend PWA(Progressive Web App), and sends push notifications when new emails matching the criteria are found.
 
 ---
 
@@ -95,5 +95,4 @@ Stores push subscription details sent from the frontend.
 
 ## Conclusion
 
-This application is a simple automation for retrieving important email periodically, storing them to view later and also notifying user when new emails are found.The frontend is a PWA which provides hass
-le-free and browser-less experience when installed
+This application is a simple automation for retrieving important email periodically, storing them to view later and also notifying user when new emails are found.The frontend is a PWA which provides hassle-free and browser-less experience when installed
