@@ -178,7 +178,7 @@ app.get("/fetch",async(req,res)=>{
     }
 })
 //cron task scheduler to scan emails , save in DB and send notifications hourly
-cron.schedule("*/10 * * * * *",async ()=>{
+cron.schedule("*0 * * * *",async ()=>{
     let emails =  await scanEmails(imapConfig);
     let dbemails = await getEmails();
     let filtered_emails = [];
