@@ -39,7 +39,6 @@ async function scanEmails(imapConfig){
 
     const criteria = [
         "ALL",
-        ["FROM","ch.sc.u4cse25255@ch.students.amrita.edu"],
         ["SINCE",today],
     ]
 
