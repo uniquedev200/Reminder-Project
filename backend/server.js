@@ -131,7 +131,8 @@ app.use(express.static(path.join(__dirname,"../frontend")));
 
 const client = new Client({
   connectionString: process.env.DB_URL,
-  ssl: { rejectUnauthorized: false }
+  ssl: { rejectUnauthorized: false },
+  family:4
 });
 
 await client.connect();
