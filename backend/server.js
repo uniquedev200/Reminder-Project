@@ -1,10 +1,9 @@
 import express from "express";
-import dns from "dns";
 import dotenv from "dotenv";
 import cron from "node-cron";
 import webpush from "web-push";
 import cors from "cors";
-import {Client} from "pg";
+import {Pool} from "pg";
 import imap from "imap-simple";
 import {simpleParser} from "mailparser";
 import path from "path";
@@ -15,7 +14,18 @@ const __dirname = path.dirname(__filename);
 dotenv.config({
     path: path.join(__dirname,".env")
 });
-dns.setDefaultResultOrder("ipv4first");
+
+const pool = new Pool({
+    connectionString:process.env.DATABASE_URL,
+    ssl:{
+        rejectUnauthorized:false
+    }
+})
+
+pool.on('error',(err)=>{
+    console.error('Unexpected error on idle client',err);
+    process.exit(-1);
+})
 //configuration for the imap protocol
 const imapConfig = {
      imap: {
@@ -73,7 +83,7 @@ async function storeEmails(email){
         VALUES ($1::jsonb)
     `;
     try{
-        let result  = await client.query(query,[email]);
+        let result  = await pool.query(query,[email]);
         return result;
     }catch(err){
         return null;
@@ -82,7 +92,7 @@ async function storeEmails(email){
 async function getEmails(){
     const query = "SELECT * from emails";
     try{
-        let result = await client.query(query);
+        let result = await pool.query(query);
         return result.rows;
     }catch(err){
         return null;
@@ -92,7 +102,7 @@ async function getEmails(){
 async function getSubscriptions(){
     const query="SELECT subscriptions FROM subscriptions"
     try{
-        let result = await client.query(query);
+        let result = await pool.query(query);
         let rows = result.rows;
         return rows;
     }catch(err){    
@@ -105,7 +115,7 @@ async function updateSubscriptions(subscription){
          VALUES ($1::jsonb)
      `
     try{
-        let result = await client.query(query,[subscription]);
+        let result = await pool.query(query,[subscription]);
         return result;
     }catch(err){    
         return null;
@@ -131,13 +141,7 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname,"../frontend")));
 
-const client = new Client({
-  connectionString: process.env.DB_URL,
-  ssl: { rejectUnauthorized: false },
-  family:4
-});
-
-await client.connect();
+await pool.connect();
 
 //to set the details of the server's vapid identity
 webpush.setVapidDetails(

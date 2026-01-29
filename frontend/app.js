@@ -3,7 +3,6 @@ const PUBLIC_VAPID_KEY = "BInib05drJ4YZ8ypMC9Q00Nl8V5Ext9UBLmgX3SpTvzS8zIeu97949
 const subscribeBtn = document.getElementById("subscribeBtn");
 const refreshBtn = document.getElementById("refreshBtn");
 const emailsDiv = document.getElementById("emails");
-const API_BASE = "http://localhost:8000"
 
 async function registerSW() {
   if (!("serviceWorker" in navigator)) {
@@ -22,7 +21,7 @@ async function subscribe() {
     applicationServerKey: urlBase64ToUint8Array(PUBLIC_VAPID_KEY)
   });
 
-  await fetch(`${API_BASE}/subscribe`, {
+  await fetch(`/subscribe`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ subscription })
@@ -34,7 +33,7 @@ async function subscribe() {
 
 async function fetchEmails() {
   emailsDiv.innerHTML = "Loading...";
-  const res = await fetch(`${API_BASE}/fetch`);
+  const res = await fetch(`/fetch`);
   const data = await res.json();
 
   emailsDiv.innerHTML = "";
